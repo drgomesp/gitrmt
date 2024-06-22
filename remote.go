@@ -56,17 +56,14 @@ loop:
 			}
 
 			for _, e := range list {
-				_, _ = fmt.Fprintf(r.out, "%s\n", e)
+				fmt.Fprintf(r.out, "%s\n", e)
 			}
 
 			_, _ = fmt.Fprint(r.out, "\n")
 		case strings.HasPrefix(command, "push "):
 			refs := strings.Split(command[5:], ":")
-			force := false
-			if strings.HasPrefix(refs[0], "+") {
-				force = true
-			}
-			r.push(refs, force)
+			isForce := strings.HasPrefix(refs[0], "+")
+			r.push(refs, isForce)
 		case strings.HasPrefix(command, "fetch "):
 			parts := strings.Split(command, " ")
 			if parts[1] != "0000000000000000000000000000000000000000" {
@@ -77,13 +74,11 @@ loop:
 		case command == "\n":
 			log.Println("processing tasks...")
 			for _, task := range r.lazyWork {
-				log.Println("got some")
 				resp, err := task()
 				if err != nil {
-					log.Fatal(err)
-					return err
+					return fmt.Errorf("error processing task: %w", err)
 				}
-				_, _ = fmt.Fprintf(r.out, "%s", resp)
+				fmt.Fprintf(r.out, "%s", resp)
 			}
 			_, _ = fmt.Fprintf(r.out, "\n")
 			r.lazyWork = nil
