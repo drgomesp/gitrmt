@@ -20,7 +20,7 @@ func (m *MyRemoteHandler) List(forPush bool) ([]string, error) {
 	log.Printf("List(forPush=%v)\n", forPush)
 
 	return []string{
-		"eee027b5728483d8089700e8fc3e7b9e14a3b5c4 refs/heads/main",
+		"46c6746f650390c2350704313aeb0c536712c0a7 refs/heads/main",
 		"@refs/heads/main HEAD",
 	}, nil
 }

@@ -61,7 +61,8 @@ loop:
 		case command == "":
 			fallthrough
 		case command == "\n":
-			r.output(out, "doing work...")
+			log.Println("doing work...")
+
 			for _, task := range r.lazyWork {
 				resp, err := task()
 				if err != nil {
