@@ -13,11 +13,9 @@ func init() {
 }
 
 func main() {
-	log.Printf("args: %+v\n", os.Args)
+	r := gitrmt.NewRemote(&MyRemoteHandler{})
 
-	r := gitrmt.NewRemote(os.Stdin, os.Stdout, &MyRemoteHandler{})
-
-	if err := r.Run(); err != nil {
+	if err := r.Run(os.Stdin, os.Stdout); err != nil {
 		log.Fatal(err)
 	}
 }

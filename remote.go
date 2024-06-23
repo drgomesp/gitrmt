@@ -17,25 +17,21 @@ type RemoteHandler interface {
 }
 
 type Remote struct {
-	in       io.Reader
-	out      io.Writer
 	handler  RemoteHandler
 	lazyWork []func() (string, error)
 }
 
-func NewRemote(in io.Reader, out io.Writer, handler RemoteHandler) *Remote {
+func NewRemote(handler RemoteHandler) *Remote {
 	log.Printf("$GIT_DIR=%v\n", os.Getenv("GIT_DIR"))
 
 	return &Remote{
-		in:       in,
-		out:      out,
 		handler:  handler,
 		lazyWork: make([]func() (string, error), 0),
 	}
 }
 
-func (r *Remote) Run() error {
-	reader := bufio.NewReader(r.in)
+func (r *Remote) Run(in io.Reader, out io.Writer) error {
+	reader := bufio.NewReader(in)
 
 loop:
 	for {
@@ -48,7 +44,7 @@ loop:
 
 		switch {
 		case command == "capabilities":
-			fmt.Fprintf(r.out, "%s\n", r.handler.Capabilities())
+			fmt.Fprintf(out, "%s\n", r.handler.Capabilities())
 		case strings.HasPrefix(command, "list"):
 			list, err := r.handler.List(strings.HasPrefix(command, "list for-push"))
 			if err != nil {
@@ -56,10 +52,10 @@ loop:
 			}
 
 			for _, e := range list {
-				fmt.Fprintf(r.out, "%s\n", e)
+				fmt.Fprintf(out, "%s\n", e)
 			}
 
-			_, _ = fmt.Fprint(r.out, "\n")
+			_, _ = fmt.Fprint(out, "\n")
 		case strings.HasPrefix(command, "push "):
 			refs := strings.Split(command[5:], ":")
 			isForce := strings.HasPrefix(refs[0], "+")
@@ -78,9 +74,9 @@ loop:
 				if err != nil {
 					return fmt.Errorf("error processing task: %w", err)
 				}
-				fmt.Fprintf(r.out, "%s", resp)
+				r.Output(out, resp)
 			}
-			_, _ = fmt.Fprintf(r.out, "\n")
+			_, _ = fmt.Fprintf(out, "\n")
 			r.lazyWork = nil
 			break loop
 		default:
@@ -90,6 +86,11 @@ loop:
 
 	return r.handler.Finish()
 }
+
+func (r *Remote) Output(out io.Writer, resp string) (int, error) {
+	return fmt.Fprintf(out, "%s", resp)
+}
+
 func (r *Remote) fetch(sha string, ref string) {
 	r.lazyWork = append(r.lazyWork, func() (string, error) {
 		return "", nil
