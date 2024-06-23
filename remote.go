@@ -9,19 +9,12 @@ import (
 	"strings"
 )
 
-type RemoteHandler interface {
-	Capabilities() string
-	List(forPush bool) ([]string, error)
-	Push(localRef string, remoteRef string, force bool) (string, error)
-	Finish() error
-}
-
 type Remote struct {
-	handler  RemoteHandler
+	handler  Handler
 	lazyWork []func() (string, error)
 }
 
-func NewRemote(handler RemoteHandler) *Remote {
+func NewRemote(handler Handler) *Remote {
 	log.Printf("$GIT_DIR=%v\n", os.Getenv("GIT_DIR"))
 
 	return &Remote{
@@ -44,7 +37,7 @@ loop:
 
 		switch {
 		case command == "capabilities":
-			fmt.Fprintf(out, "%s\n", r.handler.Capabilities())
+			r.output(out, fmt.Sprintf("%s\n", r.handler.Capabilities()))
 		case strings.HasPrefix(command, "list"):
 			list, err := r.handler.List(strings.HasPrefix(command, "list for-push"))
 			if err != nil {
@@ -52,7 +45,7 @@ loop:
 			}
 
 			for _, e := range list {
-				fmt.Fprintf(out, "%s\n", e)
+				r.output(out, fmt.Sprintf("%s\n", e))
 			}
 
 			_, _ = fmt.Fprint(out, "\n")
@@ -68,15 +61,15 @@ loop:
 		case command == "":
 			fallthrough
 		case command == "\n":
-			log.Println("processing tasks...")
+			r.output(out, "doing work...")
 			for _, task := range r.lazyWork {
 				resp, err := task()
 				if err != nil {
 					return fmt.Errorf("error processing task: %w", err)
 				}
-				r.Output(out, resp)
+				r.output(out, resp)
 			}
-			_, _ = fmt.Fprintf(out, "\n")
+			r.output(out, "\n")
 			r.lazyWork = nil
 			break loop
 		default:
@@ -87,8 +80,10 @@ loop:
 	return r.handler.Finish()
 }
 
-func (r *Remote) Output(out io.Writer, resp string) (int, error) {
-	return fmt.Fprintf(out, "%s", resp)
+func (r *Remote) output(out io.Writer, resp string) {
+	if _, err := fmt.Fprintf(out, "%s", resp); err != nil {
+		log.Printf("error outputting %q: %v", resp, err)
+	}
 }
 
 func (r *Remote) fetch(sha string, ref string) {
@@ -101,7 +96,6 @@ func (r *Remote) push(refs []string, force bool) {
 	src, dst := refs[0], refs[1]
 
 	r.lazyWork = append(r.lazyWork, func() (string, error) {
-		log.Println("push")
 		done, err := r.handler.Push(src, dst, force)
 		if err != nil {
 			return "", err
