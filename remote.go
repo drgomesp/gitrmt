@@ -37,7 +37,7 @@ loop:
 
 		switch {
 		case command == "capabilities":
-			r.output(out, fmt.Sprintf("%s\n", r.handler.Capabilities()))
+			r.output(out, "%s\n", r.handler.Capabilities())
 		case strings.HasPrefix(command, "list"):
 			list, err := r.handler.List(strings.HasPrefix(command, "list for-push"))
 			if err != nil {
@@ -45,7 +45,7 @@ loop:
 			}
 
 			for _, e := range list {
-				r.output(out, fmt.Sprintf("%s\n", e))
+				r.output(out, "%s\n", e)
 			}
 
 			_, _ = fmt.Fprint(out, "\n")
@@ -68,9 +68,9 @@ loop:
 				if err != nil {
 					return fmt.Errorf("error processing task: %w", err)
 				}
-				r.output(out, resp)
+				r.output(out, "%s", resp)
 			}
-			r.output(out, "\n")
+			r.output(out, "%s", "\n")
 			r.lazyWork = nil
 			break loop
 		default:
@@ -81,8 +81,8 @@ loop:
 	return r.handler.Finish()
 }
 
-func (r *Remote) output(out io.Writer, resp string) {
-	if _, err := fmt.Fprintf(out, "%s", resp); err != nil {
+func (r *Remote) output(out io.Writer, format, resp string) {
+	if _, err := fmt.Fprintf(out, format, resp); err != nil {
 		log.Printf("error outputting %q: %v", resp, err)
 	}
 }
