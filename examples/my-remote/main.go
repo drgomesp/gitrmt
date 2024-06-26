@@ -12,8 +12,8 @@ var _ gitrmt.Handler = &MyRemoteHandler{}
 type MyRemoteHandler struct {
 }
 
-func (m *MyRemoteHandler) Capabilities() string {
-	return "push\nfetch\n"
+func (m *MyRemoteHandler) Capabilities() []string {
+	return []string{"push", "fetch"}
 }
 
 func (m *MyRemoteHandler) List(forPush bool) ([]string, error) {

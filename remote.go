@@ -37,7 +37,11 @@ loop:
 
 		switch {
 		case command == "capabilities":
-			r.output(out, "%s\n", r.handler.Capabilities())
+			r.output(
+				out,
+				"%s\n",
+				strings.Join(r.handler.Capabilities(), "\n"),
+			)
 		case strings.HasPrefix(command, "list"):
 			list, err := r.handler.List(strings.HasPrefix(command, "list for-push"))
 			if err != nil {
